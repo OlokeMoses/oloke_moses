@@ -1,0 +1,37 @@
+// Define the region of interest (Lagos)
+var lagos = ee.Geometry.Polygon([
+  [
+    [3.0916, 6.4359],
+    [3.0916, 6.6000],
+    [3.5561, 6.6000],
+    [3.5561, 6.4359]
+  ]
+]);
+
+// Load a Landsat 8 Image for Lagos
+var image = ee.ImageCollection('LANDSAT/LC08/C01/T1_SR')
+  .filterBounds(lagos)
+  .filterDate('2020-01-01', '2020-12-31')
+  .sort('CLOUD_COVER')
+  .first();
+
+// Center the map on Lagos
+Map.centerObject(lagos, 10);
+
+// Add the true color composite to the map
+Map.addLayer(image, {bands: ['B4', 'B3', 'B2'], max: 3000}, 'Landsat 8 True Color');
+
+// Calculate NDVI
+var ndvi = image.normalizedDifference(['B5', 'B4']).rename('NDVI');
+
+// Add the NDVI layer to the map
+Map.addLayer(ndvi, {min: 0, max: 1, palette: ['blue', 'white', 'green']}, 'NDVI');
+
+// Export the NDVI image to Google Drive
+Export.image.toDrive({
+  image: ndvi,
+  description: 'NDVI_Lagos',
+  scale: 30,
+  region: lagos,
+  maxPixels: 1e9
+});
